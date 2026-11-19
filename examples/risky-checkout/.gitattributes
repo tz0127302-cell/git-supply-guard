@@ -1,0 +1,5 @@
+* filter=synthetic-smudge
+SECURITY.md export-ignore
+.github/workflows/ci.yml export-ignore
+vendor/creds merge=ours
+*.bin binary -diff
