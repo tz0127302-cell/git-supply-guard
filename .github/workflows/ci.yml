@@ -35,7 +35,8 @@ jobs:
         run: go build -o "${RUNNER_TEMP}/gsg" ./cmd/gsg
 
       - name: Scan this repository
-        run: "${RUNNER_TEMP}/gsg" scan . --exclude examples --fail-on high
+        run: |
+          "${RUNNER_TEMP}/gsg" scan . --exclude examples --fail-on high
 
       - name: Risky fixture fails closed
         run: |
@@ -49,7 +50,8 @@ jobs:
           fi
 
       - name: Clean fixture passes
-        run: "${RUNNER_TEMP}/gsg" scan examples/clean-checkout --fail-on high
+        run: |
+          "${RUNNER_TEMP}/gsg" scan examples/clean-checkout --fail-on high
 
       - name: Action scan
         uses: ./
