@@ -1,0 +1,4 @@
+[submodule "vendor/demo"]
+	path = vendor/demo
+	url = https://example.invalid/demo.git
+	update = checkout

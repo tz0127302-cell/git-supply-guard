@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build -o "${RUNNER_TEMP}/gsg" ./cmd/gsg
+
+      - name: Scan this repository
+        run: |
+          "${RUNNER_TEMP}/gsg" scan . --exclude examples --fail-on high
+
+      - name: Risky fixture fails closed
+        run: |
+          set +e
+          "${RUNNER_TEMP}/gsg" scan examples/risky-checkout --fail-on high
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 from the risky fixture, got ${code}"
+            exit 1
+          fi
+
+      - name: Clean fixture passes
+        run: |
+          "${RUNNER_TEMP}/gsg" scan examples/clean-checkout --fail-on high
+
+      - name: Action scan
+        uses: ./
+        with:
+          path: .
+          exclude: examples
+          fail-on: high

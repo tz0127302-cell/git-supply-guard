@@ -1,0 +1,16 @@
+# Synthetic fixture. These URLs are not repositories.
+[submodule "vendor/left-pad"]
+	path = vendor/left-pad
+	url = ../left-pad.git
+	update = checkout
+[submodule "vendor/ext-demo"]
+	path = vendor/ext-demo
+	url = ext::synthetic-transport
+	update = checkout
+[submodule "vendor/file-demo"]
+	path = ../../outside
+	url = file:///tmp/gsg-fixture-not-a-repo
+	ignore = all
+[submodule "vendor/creds"]
+	path = vendor/creds
+	url = https://fixture-user:fixture-token@example.invalid/demo.git

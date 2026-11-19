@@ -1,0 +1,8 @@
+name: synthetic-recursive-clone
+on: push
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: synthetic smell
+        run: git clone --recurse-submodules https://example.invalid/demo.git

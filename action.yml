@@ -1,0 +1,83 @@
+name: "git-supply-guard"
+description: "Audit a checkout for Git supply-chain and clone hygiene. Hooks are not executed."
+author: "git-supply-guard contributors"
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  path:
+    description: "Directory to scan"
+    required: false
+    default: "."
+  fail-on:
+    description: "Lowest severity that fails the job: info, low, medium, high, critical, or none"
+    required: false
+    default: "high"
+  exclude:
+    description: "Comma-separated path prefixes to skip"
+    required: false
+    default: ""
+  ignore:
+    description: "Comma-separated finding IDs to drop, for example GSG-SUB-010"
+    required: false
+    default: ""
+  json:
+    description: "Also write the JSON report to this file"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Scan with git-supply-guard
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_EXCLUDE: ${{ inputs.exclude }}
+        INPUT_IGNORE: ${{ inputs.ignore }}
+        INPUT_JSON: ${{ inputs.json }}
+      run: |
+        set -euo pipefail
+        if ! command -v go >/dev/null 2>&1; then
+          echo "git-supply-guard needs Go on PATH. Add actions/setup-go before this action." >&2
+          exit 2
+        fi
+        if [[ -z "${GITHUB_ACTION_PATH:-}" ]]; then
+          echo "GITHUB_ACTION_PATH is not set." >&2
+          exit 2
+        fi
+        work="${RUNNER_TEMP:-/tmp}/gsg-action"
+        mkdir -p "$work"
+        bin="$work/gsg"
+        (cd "$GITHUB_ACTION_PATH" && go build -o "$bin" ./cmd/gsg)
+        args=(scan "$INPUT_PATH" --fail-on "$INPUT_FAIL_ON" --no-color)
+        if [[ -n "$INPUT_EXCLUDE" ]]; then
+          IFS=',' read -ra parts <<< "$INPUT_EXCLUDE"
+          for part in "${parts[@]}"; do
+            part="${part#"${part%%[![:space:]]*}"}"
+            part="${part%"${part##*[![:space:]]}"}"
+            if [[ -n "$part" ]]; then
+              args+=(--exclude "$part")
+            fi
+          done
+        fi
+        if [[ -n "$INPUT_IGNORE" ]]; then
+          IFS=',' read -ra parts <<< "$INPUT_IGNORE"
+          for part in "${parts[@]}"; do
+            part="${part#"${part%%[![:space:]]*}"}"
+            part="${part%"${part##*[![:space:]]}"}"
+            if [[ -n "$part" ]]; then
+              args+=(--ignore "$part")
+            fi
+          done
+        fi
+        if [[ -n "$INPUT_JSON" ]]; then
+          mkdir -p "$(dirname "$INPUT_JSON")"
+          args+=(--json)
+          "$bin" "${args[@]}" | tee "$INPUT_JSON"
+        else
+          "$bin" "${args[@]}"
+        fi
